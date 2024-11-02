@@ -23,19 +23,57 @@ async function getAllClients(req, res) {
     }
 }
 
-const updateClients = (req, res) => {
-    const { clients } = req.body
-    const { id } = req.params
-    res.send(
-        {
-            data: clients,
-            message: `this ${id} is Updated succesfully`
+const updateClients = async (req, res) => {
+    try {
+        const { id } = req.params;  // Get the client ID from URL parameters
+        const updatedData = req.body;  // Get the updated client data from the request body
 
-        })
-}
-const deleteClients = (req, res) => {
-    const { id } = req.params
-    res.send(`This ${id} is deleted successfully`)
-}
+        // Ensure both `id` and `updatedData` are provided
+        if (!id || Object.keys(updatedData).length === 0) {
+            return res.status(400).json({ message: "ID and client data are required" });
+        }
+
+        // Find client by ID and update with new data
+        const updatedClient = await Client.findByIdAndUpdate(id, updatedData, {
+            new: true,  // Return the modified document after the update
+            runValidators: true  // Run schema validators on the update
+        });
+
+        // If the client with the given ID doesn't exist, return a 404 response
+        if (!updatedClient) {
+            return res.status(404).json({ message: `Client with ID ${id} not found` });
+        }
+
+        // Respond with the updated client data
+        res.json({
+            data: updatedClient,
+            message: `Client with ID ${id} updated successfully`
+        });
+    } catch (error) {
+        console.error("Error updating client:", error);
+        res.status(500).json({ message: "An error occurred while updating the client" });
+    }
+};
+
+
+const deleteClients = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Find and delete the client by ID
+        const deletedClient = await Client.findByIdAndDelete(id);
+
+        // Check if client with given ID exists
+        if (!deletedClient) {
+            return res.status(404).json({ message: `Client with ID ${id} not found` });
+        }
+
+        res.json({ message: `Client with ID ${id} deleted successfully` });
+    } catch (error) {
+        console.error("Error deleting client:", error);
+        res.status(500).json({ message: "An error occurred while deleting the client" });
+    }
+};
+
 
 module.exports = { getAllClients, addClients, updateClients, deleteClients }
